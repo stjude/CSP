@@ -75,7 +75,7 @@ conda install  --yes --file requirements.txt -n csp
 
 ```
 
-To run the script, just activate that environment
+To have the required packages available to run the script, just activate that environment
 
 ```
 conda activate csp
