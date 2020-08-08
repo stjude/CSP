@@ -1,5 +1,5 @@
 # CSP stands for cumulative survival profiling
-Validation and detection of heteroresistance and related outcomes using cumulative-survival-profiling
+Validation and detection of heteroresistance and related outcomes in staphylococci using cumulative-survival-profiling. CSP is a population-analysis-profile-based (PAP-based) method.
 # Raw data format
 For heteroresistance validation and detection via csp, we introduce a new format for isolate's data. In the new format, the isolate data is entered in tabular form such that each row represents a distinct PAP and the columns represent the antibiotic-gradient concentrations (in ![equation](https://latex.codecogs.com/gif.latex?%5Cmu%20g/mL)). Thus, the entries in the table would be the raw bacterial counts (in CFU/mL) of the corresponding PAP at each of the antibiotic concentration values.    
 If an isolate has multiple measured PAPs each PAP would contribute a row and the names of the multiple PAPs (the row names) would be distinct and indicate that they are for the same isolate (for e.g. iso1_pap1, iso1_pap2, ..etc).
