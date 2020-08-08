@@ -81,3 +81,5 @@ To run the script, just activate that environment
 conda activate csp
 
 ```
+# Reference
+Please consult our pre-print on medRxiv 
