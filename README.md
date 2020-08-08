@@ -66,3 +66,18 @@ regFit_CSP_Log10.png: a plot showing the regression fit to data
 refTrace.csv: the MCMC trace for the posterior samples 
 ref_and_isolates_paps.csv: the reference and isolates' PAPs saved appended togother with added features
 ```
+# Installing required packages 
+Required python packages to run the csp_main.py script are listed in the requirements.txt file. We recommend using conda for installing these packages. At the conda prompt, create a new environment under the name csp (optional) and then install packages into that envirnment. 
+
+```
+conda create -n csp
+conda install  --yes --file requirements.txt -n csp
+
+```
+
+To run the script, just activate that environment
+
+```
+conda activate csp
+
+```
