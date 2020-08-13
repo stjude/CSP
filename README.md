@@ -82,4 +82,4 @@ conda activate csp
 
 ```
 # Reference
-Please consult our pre-print on medRxiv 
+Ramzi A. Alsallaq, Tina Dao, Jason W. Rosch, Elisa Margolis "Cumulative survival profiling: a new PAP-based method for detecting heteroresistance in staphylococcal clinical isolates" https://www.medrxiv.org/content/10.1101/2020.08.10.20148502v1 
