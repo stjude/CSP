@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+#######################################################################################
+###### Copy right St. Jude Children's Research Hospital 2020 ##########################
+###### Author: Ramzi Alsallaq (ramzi.alsallaq@stjude.org)    ##########################
+#######################################################################################
 import sys, os, glob
 import logging
 import argparse
