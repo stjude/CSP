@@ -11,7 +11,7 @@ Manipulation of pre-cleaned raw PAP data by averaging, replacing missing data by
 |iso1_pap2|   |8e7|   |2e5|   |1e2||5|
 |iso2_pap1|2.3e8|3e7|   | |   | | | |
 
-would half the initial inoculum (counts at 0 ![equation](https://latex.codecogs.com/gif.latex?%5Cmu%20g/mL)) and the counts at 3 and 4 ![equation](https://latex.codecogs.com/gif.latex?%5Cmu%20g/mL).
+would halve the initial inoculum (counts at 0 ![equation](https://latex.codecogs.com/gif.latex?%5Cmu%20g/mL)) and the counts at 3 and 4 ![equation](https://latex.codecogs.com/gif.latex?%5Cmu%20g/mL).
 # Clean data
 The first step after formatting the raw data as described above is to keep clean data and drop PAPs for which we cannot calculate the area under the counts curve in a reliable way. For the reasons mentioned above, we strongly suggest dropping PAPs with a missing initial inoculum and PAPs with measured counts at fewer than three concentrations. For example iso1_pap2 in the table above should be dropped from the analyses for missing the initial inoculum and iso2_pap1 should be dropped for having less than three points. The main algorithm in the script "csp_main.py" does this cleaning step for both the reference and the isolates if both are supplied.
 # Separate files for reference and isolates
