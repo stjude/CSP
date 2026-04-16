@@ -67,19 +67,96 @@ refTrace.csv: the MCMC trace for the posterior samples
 ref_and_isolates_paps.csv: the reference and isolates' PAPs saved appended togother with added features
 ```
 # Installing required packages 
-Required python packages to run the csp_main.py script are listed in the requirements.txt file. We recommend using conda for installing these packages. At the conda prompt, create a new environment under the name csp (optional) and then install packages into that envirnment. 
 
+Required Python packages to run the csp_main.py script are listed in the `requirements.txt` file. The script requires **PyMC 5.28.4** and Python 3.11+.
+
+## Option 1: Using Python Virtual Environment (venv) - Recommended
+
+This is the recommended approach for this project. Create a Python virtual environment and install packages using pip:
+
+```bash
+# Create a virtual environment named .myenv
+python3 -m venv .myenv
+
+# Activate the virtual environment
+source .myenv/bin/activate  # On Windows: .myenv\Scripts\activate
+
+# Upgrade pip, setuptools, and wheel
+pip install --upgrade pip setuptools wheel
+
+# Install all required packages from requirements.txt
+pip install -r requirements.txt
 ```
-conda create -n csp
-conda install  --yes --file requirements.txt -n csp
 
+After installation, verify that PyMC 5.28.4 is installed:
+
+```bash
+python -c "import pymc as pm; print(f'PyMC version: {pm.__version__}')"
 ```
 
-To have the required packages available to run the script, just activate that environment
+## Option 2: Using Conda
 
-```
+Alternatively, you can use conda to create an environment and install packages:
+
+```bash
+# Create a new conda environment named csp (optional)
+conda create -n csp python=3.11
+
+# Activate the environment
 conda activate csp
 
+# Install packages from requirements.txt
+conda install --yes --file requirements.txt
+
 ```
+
+## Option 3: Using Mamba (Faster Alternative to Conda)
+
+For faster package resolution and installation, use mamba:
+
+```bash
+# Create environment with mamba
+mamba create -n csp -c conda-forge --yes --file requirements.txt
+
+# Activate the environment
+mamba activate csp
+```
+
+## Activating the Environment
+
+Once installed, activate the environment before running the script:
+
+```bash
+# For venv:
+source .myenv/bin/activate  # On Windows: .myenv\Scripts\activate
+
+# For conda/mamba:
+conda activate csp          # or: mamba activate csp
+```
+
+## Verifying Installation
+
+To verify that all packages are correctly installed:
+
+```bash
+# Check PyMC version
+python -c "import pymc as pm; print(f'PyMC: {pm.__version__}')"
+
+# Check key dependencies
+python -c "import numpy, scipy, pandas, matplotlib, seaborn, statsmodels, sklearn, arviz; print('All packages imported successfully!')"
+```
+
+## Package Information
+
+- **PyMC**: 5.28.4 (Bayesian modeling and probabilistic programming)
+- **PyTensor**: 2.38.2 (Tensor computation framework, successor to Theano)
+- **ArviZ**: 0.23.4 (Posterior analysis visualization)
+- **NumPy**: 2.4.4 (Numerical computing)
+- **SciPy**: 1.17.1 (Scientific computing)
+- **Pandas**: 3.0.2 (Data manipulation)
+- **Matplotlib**: 3.10.8 (Visualization)
+- **Seaborn**: 0.13.2 (Statistical visualization)
+- **Statsmodels**: 0.14.6 (Statistical modeling)
+- **Scikit-learn**: 1.8.0 (Machine learning)
 # Reference
 Ramzi A. Alsallaq, Tina Dao, Jason W. Rosch, Elisa Margolis "Cumulative survival profiling: a new PAP-based method for detecting heteroresistance in staphylococcal clinical isolates" https://www.medrxiv.org/content/10.1101/2020.08.10.20148502v1 
