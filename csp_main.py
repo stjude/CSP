@@ -17,8 +17,8 @@ import _pickle as pickle
 sbs.set(context='talk', style='darkgrid', palette='deep', font='sans-serif')
 from sklearn.metrics import auc
 from scipy.interpolate import interp1d
-import pymc3 as pm3
-import theano
+import pymc as pm
+import arviz as az
 log_filename = 'csp_run.log'
 logging.basicConfig(filename=log_filename,filemode='w',level=logging.DEBUG,format='[%(asctime)s-%(levelname)s] %(message)s',datefmt='%d-%b-%y %H:%M:%S')
 logging.info('The output will be logged into file {}'.format(log_filename))
@@ -50,7 +50,7 @@ def addAUCs(inDF, concs, uselog10=True):
     xx=df.columns.astype(float)
     for i, row in df.iterrows():
         yy=row.astype(float)
-        ind_ = np.where(~yy.isnull())[0]
+        ind_ = ~yy.isnull()
         if uselog10: #wotton auc under log10 counts
             log10values=np.where(yy[ind_]>0,np.log10(yy[ind_]), 0)
             ff = interp1d(xx[ind_],log10values)
@@ -69,17 +69,17 @@ def refStrainProfiling(refPAPs, regselect, maxConc):
         logger.info("x_values = {}".format(x))
         logger.info("y_values = {}".format(y))
         #using probabilistic programing
-        with pm3.Model() as model1:
+        with pm.Model() as model1:
             #define priors
-            sigma = pm3.HalfCauchy('sigma', beta=1e7, testval=1.e7)
-            intercept = pm3.Normal('intercept',0, tau=1./1e8**2, shape=x.shape[0])
-            cumSurv = pm3.Normal('cumSurv',0,tau=1/1e5**2)
-            liklelihood = pm3.Normal('y',mu=intercept + cumSurv*x, tau=1./sigma**2, observed=y)
+            sigma = pm.HalfCauchy('sigma', beta=1e7)
+            intercept = pm.Normal('intercept', 0, sigma=1.e4, shape=x.shape[0])
+            cumSurv = pm.Normal('cumSurv', 0, sigma=1e5)
+            likelihood = pm.Normal('y', mu=intercept + cumSurv*x, sigma=sigma, observed=y)
     
             #inference
             logger.info("Sampling for inference")
-            trace  = pm3.sample(1000, tune=8000, cores=4, random_seed=[1,2,3,4]) #draw 3000 posterior samples using NUTS sampling
-            sim = pm3.sample_posterior_predictive(trace, samples=1000)
+            trace  = pm.sample(1000, tune=8000, cores=4, random_seed=42, return_inferencedata=True)
+            sim = pm.sample_posterior_predictive(trace, random_seed=1)
     
         return trace, sim
     
@@ -89,18 +89,18 @@ def refStrainProfiling(refPAPs, regselect, maxConc):
         logger.info("x_values = {}".format(x))
         logger.info("y_values = {}".format(y))
         logger.info("maxConc = {}".format(maxConc))
-        with pm3.Model() as model1:
-            sigma = pm3.HalfCauchy('sigma', beta=1e7)
-            cumSurv = pm3.Uniform('cumSurv', 1.e-6, maxConc,testval=0.7)
-            epsilon = pm3.Normal('epsilon',0, tau=1./1e8**2,shape=x.shape[0]) 
+        with pm.Model() as model1:
+            sigma = pm.HalfCauchy('sigma', beta=1e7)
+            cumSurv = pm.Uniform('cumSurv', 1.e-6, maxConc)
+            epsilon = pm.Normal('epsilon', 0, sigma=1.e4, shape=x.shape[0]) 
             
             mu = np.log10((x+epsilon)*cumSurv) 
             yprime = np.log10(y)
-            liklelihood = pm3.Normal('log10y',mu=mu, tau=1./sigma**2, observed=yprime)
+            likelihood = pm.Normal('log10y', mu=mu, sigma=sigma, observed=yprime)
     
             logger.info("Sampling for inference")
-            trace  = pm3.sample(1000, tune=8000, cores=4, random_seed=[1,2,3,4]) 
-            sim = pm3.sample_posterior_predictive(trace, samples=1000)
+            trace  = pm.sample(1000, tune=8000, cores=4, random_seed=42, return_inferencedata=True) 
+            sim = pm.sample_posterior_predictive(trace, random_seed=1)
     
         return trace, sim
 
@@ -147,7 +147,7 @@ def crossValidate(refTrace, refPAPs, maxConc, frac=0.8, niter=50):
         n_train.append(train.shape[0])
         n_valid.append(valid.shape[0])
         trace_train, sim_train = refStrainProfiling(train, 'Log10', maxConc)
-        qs = np.array(mquantiles(trace_train['cumSurv'],[0.025,0.975]))
+        qs = np.array(mquantiles(trace_train.posterior['cumSurv'].values.flatten(),[0.025,0.975]))
         q25.append(qs[0])
         q975.append(qs[1])
         valid_cumSurv = valid['aucFull'].values/valid['0'].values
@@ -168,23 +168,23 @@ def verifyModel(refTrace, simRef, refPAPs, regselect):
     ref_initialInnoc = refPAPs.loc[:,initialInnocCol_ind].values.flatten()
     fig, ax=pl.subplots(figsize=(8,7))
     if regselect == 'Linear':
-        qs = mquantiles(simRef['y'], [0.025,0.975],axis=0)
-        y_sim = simRef['y'].mean(axis=0)
-        ax.plot(np.log10(refPAPs['0']), np.log10(simRef['y'].T), '.', color='lightgray', linestyle="", alpha=0.05)
-        ax.plot(np.log10(refPAPs['0']), np.log10(simRef['y'].T[:,0]), '.', markersize=20, color='lightgray', linestyle="", alpha=0.3, label='posterior predictive')
+        qs = mquantiles(simRef.posterior_predictive['y'].values.flatten(), [0.025,0.975])
+        y_sim = simRef.posterior_predictive['y'].mean(dim=['chain', 'draw']).values
+        ax.plot(np.log10(refPAPs['0']), np.log10(simRef.posterior_predictive['y'].values.reshape(-1, refPAPs.shape[0]).T), '.', color='lightgray', linestyle="", alpha=0.05)
+        ax.plot(np.log10(refPAPs['0']), np.log10(simRef.posterior_predictive['y'].values.reshape(-1, refPAPs.shape[0]).T[:,0]), '.', markersize=20, color='lightgray', linestyle="", alpha=0.3, label='posterior predictive')
         sbs.scatterplot(data=np.log10(refPAPs[['0','aucFull']]), x='0', y='aucFull', s=100, label='data', ax=ax)
-        sbs.lineplot(np.log10(refPAPs['0']),np.log10(refTrace['cumSurv'].mean()*refPAPs['0']), label="regression fit", ax=ax)
+        ax.plot(np.log10(refPAPs['0']),np.log10(refTrace.posterior['cumSurv'].mean(dim=['chain', 'draw']).values*refPAPs['0']), label="regression fit", linewidth=2)
         ax.set_xlabel("log10(initial innoculum ($\mu$g/ml))")
         ax.set_ylabel("log10(PAP-AUC (CFU/ml.$\mu$g/ml))")
         ax.legend(facecolor='white', fontsize=14)
 
     elif regselect == 'Log10':
-        qs = mquantiles(simRef['log10y'], [0.025,0.975],axis=0)
-        y_sim = simRef['log10y'].mean(axis=0)
-        ax.plot(np.log10(refPAPs['0']), simRef['log10y'].T, '.', color='lightgray', linestyle="", alpha=0.05)
-        ax.plot(np.log10(refPAPs['0']), simRef['log10y'].T[:,0], '.', markersize=20, color='lightgray', linestyle="", alpha=0.3, label='posterior predictive')
+        qs = mquantiles(simRef.posterior_predictive['log10y'].values.flatten(), [0.025,0.975])
+        y_sim = simRef.posterior_predictive['log10y'].mean(dim=['chain', 'draw']).values
+        ax.plot(np.log10(refPAPs['0']), simRef.posterior_predictive['log10y'].values.reshape(-1, refPAPs.shape[0]).T, '.', color='lightgray', linestyle="", alpha=0.05)
+        ax.plot(np.log10(refPAPs['0']), simRef.posterior_predictive['log10y'].values.reshape(-1, refPAPs.shape[0]).T[:,0], '.', markersize=20, color='lightgray', linestyle="", alpha=0.3, label='posterior predictive')
         sbs.scatterplot(data=np.log10(refPAPs[['0','aucFull']]), x='0', y='aucFull', s=100, label='data', ax=ax)
-        sbs.lineplot(np.log10(refPAPs['0']),np.log10(refTrace['cumSurv'].mean()*refPAPs['0']), label="regression fit", ax=ax)
+        ax.plot(np.log10(refPAPs['0']),np.log10(refTrace.posterior['cumSurv'].mean(dim=['chain', 'draw']).values*refPAPs['0']), label="regression fit", linewidth=2)
         ax.set_xlabel("log10(initial innoculum ($\mu$g/ml))")
         ax.set_ylabel("log10(PAP-AUC (CFU/ml.$\mu$g/ml))")
         ax.legend(facecolor='white', fontsize=14)
@@ -194,7 +194,7 @@ def verifyModel(refTrace, simRef, refPAPs, regselect):
 def classifyIsos(refTrace, isoPAPs, regselect):
     if regselect=='Linear' or regselect=='Log10':
         initialInnocCol_ind = isoPAPs.columns.isin([0,'0'])
-        threshold = np.array(mquantiles(refTrace['cumSurv'],[0.025]))[0]
+        threshold = np.array(mquantiles(refTrace.posterior['cumSurv'].values.flatten(),[0.025]))[0]
         logger.info("{} regression: cumulative survival q2.5% threshold = {}".format(regselect,threshold))
         isoPAPs.loc[:,'class'+regselect+'Reg'] = (isoPAPs['aucFull'].values/isoPAPs.loc[:,initialInnocCol_ind].values.flatten() >=threshold).astype(float)
         return isoPAPs
@@ -257,7 +257,7 @@ Mu3_7,18600000.0,14800000.0,201000.0,440.0,0.0,0.0,0.0
     refPAPs = addAUCs(inDF=refPAPs, concs=concs, uselog10=False) 
     logger.info("Running Reference-Strain-Profiling (CSP)")
     refTrace, simRef = refStrainProfiling(refPAPs, regselect=regselect, maxConc=maxAntibioticConc)
-    df_trace = pm3.trace_to_dataframe(refTrace)
+    df_trace = refTrace.posterior.to_dataframe().reset_index()
     logger.info("Saving MCMC trace to refTrace.csv")
     df_trace.to_csv("refTrace.csv", index=False)
     #plot 
